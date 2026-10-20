@@ -1,0 +1,29 @@
+[
+  {
+    "name": "高地温通风措施",
+    "question": "高地温施工时应采取什么通风和人员防护措施？",
+    "expected_key_points": ["通风降温措施", "作业人员"],
+    "required_source_ids": ["TEST-STD-HEAT-001"],
+    "should_refuse": false,
+    "scenario": "risk_analysis",
+    "tags": ["规范", "高地温", "引用"]
+  },
+  {
+    "name": "岩爆监测",
+    "question": "岩爆风险分析为什么不能依赖单一传感器？",
+    "expected_key_points": ["监测设备", "专家复核"],
+    "required_source_ids": ["TEST-RES-STRESS-001"],
+    "should_refuse": false,
+    "scenario": "risk_analysis",
+    "tags": ["论文", "岩爆", "多源监测"]
+  },
+  {
+    "name": "开放域拒答",
+    "question": "What is the weather in Paris tomorrow?",
+    "expected_key_points": [],
+    "required_source_ids": [],
+    "should_refuse": true,
+    "scenario": null,
+    "tags": ["拒答", "开放域"]
+  }
+]

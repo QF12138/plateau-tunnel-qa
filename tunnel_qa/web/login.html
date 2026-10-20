@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>登录 · 高原隧道知识平台</title><link rel="stylesheet" href="/auth-assets.css"><script src="/auth-pages.js" defer></script></head>
+<body data-page="login"><a class="skip-login" href="#username">跳到登录表单</a><main class="login-shell">
+  <section class="identity-panel" aria-labelledby="platform-title">
+    <a class="wordmark" href="/login"><span class="mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M6 33V17a14 14 0 0 1 28 0v16M12 33V17a8 8 0 0 1 16 0v16M3 33h34M15 33l3-10m7 10-3-10"/></svg></span>高原铁路隧道<span>科研—施工知识平台</span></a>
+    <div class="identity-copy"><p class="eyebrow">PLATEAU TUNNEL / KNOWLEDGE PLATFORM</p><h1 id="platform-title">高原铁路隧道<br><span>科研—施工智能问答</span></h1></div>
+    <div class="tunnel-section" aria-hidden="true">
+      <svg class="tunnel-drawing" viewBox="0 0 600 330" fill="none" focusable="false">
+        <defs>
+          <linearGradient id="tunnel-stroke" x1="100" y1="30" x2="490" y2="300" gradientUnits="userSpaceOnUse"><stop stop-color="#a0ede9"/><stop offset=".6" stop-color="#63ddd3"/><stop offset="1" stop-color="#527eac"/></linearGradient>
+          <radialGradient id="tunnel-haze"><stop stop-color="#63ddd3" stop-opacity=".14"/><stop offset="1" stop-color="#63ddd3" stop-opacity="0"/></radialGradient>
+          <linearGradient id="tunnel-floor" x1="300" y1="178" x2="300" y2="325" gradientUnits="userSpaceOnUse"><stop stop-color="#63ddd3" stop-opacity=".12"/><stop offset="1" stop-color="#63ddd3" stop-opacity="0"/></linearGradient>
+        </defs>
+        <ellipse cx="337" cy="167" rx="240" ry="157" fill="url(#tunnel-haze)"/>
+        <path d="M40 315 318 194h32l220 121Z" fill="url(#tunnel-floor)"/>
+        <g stroke="#688da5" stroke-width=".8" opacity=".3">
+          <path d="M20 315h560M56 274h492M98 240h415M164 216h316M210 199h242"/>
+          <path d="m20 315 298-121m-161 121 171-121m106 121-96-121m242 121L350 194"/>
+          <path d="M36 292V30m-6 0h12m-12 65h12m-12 66h12m-12 66h12m-12 65h12"/>
+        </g>
+        <g stroke="url(#tunnel-stroke)" stroke-width="1.2">
+          <path d="M73 285V158C73-22 527-22 527 158v127" opacity=".88"/>
+          <path d="M124 263V151c0-147 364-147 364 0v112" opacity=".75"/>
+          <path d="M172 241V151c0-116 280-116 280 0v90" opacity=".64"/>
+          <path d="M213 224v-69c0-91 205-91 205 0v69" opacity=".53"/>
+          <path d="M248 211v-54c0-68 143-68 143 0v54" opacity=".43"/>
+          <path d="M276 202v-41c0-49 97-49 97 0v41" opacity=".33"/>
+          <path d="M297 196v-31c0-32 60-32 60 0v31" opacity=".24"/>
+        </g>
+        <g stroke="#86c5d4" stroke-width=".8" opacity=".32"><path d="M73 158 297 165m230-7-170 7M151 54l155 92M449 54l-101 92M300 23l27 119M73 285l224-89m230 89-170-89"/></g>
+        <g stroke="#9ce4df" stroke-width="1.3" opacity=".75"><path d="m139 315 179-121m134 121L339 194m-149 82h238m-207-22h190m-162-18h147m-122-15h109m-90-12h78"/></g>
+        <path d="M63 285h20m-10-10v20M517 285h20m-10-10v20" stroke="#ed8957" stroke-width="1.5"/>
+      </svg>
+      <div class="drawing-caption"><span>隧道纵深 · 知识连接</span><span>TUNNEL / PERSPECTIVE</span></div>
+    </div>
+    <footer class="identity-footer"><span>文档入库</span><i aria-hidden="true">→</i><span>知识图谱</span><i aria-hidden="true">→</i><span>知识问答</span></footer>
+  </section>
+  <section class="login-panel" aria-labelledby="login-title"><div class="login-inner">
+    <p class="eyebrow login-kicker">账号登录 <span aria-hidden="true">/ SIGN IN</span></p><h2 id="login-title">登录工作台</h2>
+    <div id="login-startup" class="session-feedback login-startup" role="status"><p>登录组件尚未就绪，请稍候。长时间没有反应时，请重新加载页面。</p><noscript><p>浏览器未启用 JavaScript，请启用后重试。</p></noscript><a href="">重新加载页面</a></div>
+    <p id="session-feedback" class="session-feedback" role="status" hidden></p>
+    <form id="login-form" method="post" action="/api/v1/auth/login" aria-busy="false">
+      <label for="username">登录账号</label><input id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required maxlength="100" placeholder="请输入登录账号" aria-describedby="form-feedback">
+      <label for="password">密码</label><div class="password-field"><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="256" placeholder="请输入密码" aria-describedby="caps-lock form-feedback"><button type="button" id="toggle-password" class="password-toggle" aria-label="显示密码" aria-pressed="false" aria-controls="password" disabled>显示</button></div>
+      <p id="caps-lock" class="caps-lock" role="status" hidden>大写锁定已开启，请注意密码大小写。</p>
+      <div class="login-options"><label class="remember-label" for="remember-username"><input type="checkbox" id="remember-username" aria-describedby="remember-note" disabled>记住账号</label><span id="remember-note">不保存密码</span></div>
+      <p id="form-feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+      <button id="login-submit" class="primary full" type="submit" disabled><span id="submit-label">正在准备登录…</span><span class="submit-icon" aria-hidden="true">→</span></button>
+    </form>
+    <details class="login-help"><summary>忘记密码或还没有账号？</summary><p>请联系系统管理员开通账号或重设密码。本平台不提供公开注册。账号已停用时，也需由管理员重新启用。</p></details>
+    <div class="session-note"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10V7a6 6 0 0 1 12 0v3M5 10h14v11H5zM12 14v3"/></svg><p>登录有效期 8 小时<br><span>共用设备上请勿记住账号，使用后及时退出。</span></p></div>
+  </div></section>
+</main></body></html>

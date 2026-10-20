@@ -1,0 +1,85 @@
+// Synthetic credentials and mocked gateway errors, isolated 8766 preview only.
+async page => {
+  const base='http://127.0.0.1:8766', results=[], errors=[];
+  if(!page.url().startsWith(base+'/'))throw new Error('Only isolated preview is allowed');
+  const check=(ok,label)=>{if(!ok)throw new Error(label);results.push(label);};
+  const onError=error=>errors.push(error.message);
+  page.on('pageerror',onError);
+  await page.context().clearCookies();
+  await page.route('**/auth-pages.js',route=>route.abort());
+  await page.goto(base+'/login?next=%2Faccounts');
+  check(await page.locator('#login-startup').isVisible(),'Failed script has visible recovery instructions');
+  check(await page.locator('#login-submit').isDisabled(),'Failed script cannot submit');
+  check(await page.locator('#login-form').evaluate(form=>form.method==='post'),'Native form never uses GET for credentials');
+  check(await page.getByRole('link',{name:'重新加载页面',exact:true}).isVisible(),'Recovery link works without JavaScript');
+  let accidentalRequests=0;
+  const observe=request=>{if(request.url().includes('/api/v1/auth/login')||request.url().includes('password='))accidentalRequests++;};
+  page.on('request',observe);
+  await page.getByLabel('登录账号',{exact:true}).fill('synthetic-only');
+  await page.getByLabel('密码',{exact:true}).fill('Synthetic-Preview-Only');
+  await page.getByLabel('密码',{exact:true}).press('Enter');
+  await page.waitForTimeout(150);
+  check(accidentalRequests===0,'Enter cannot submit while login script is unavailable');
+  page.off('request',observe);
+  await page.setViewportSize({width:360,height:800});
+  await page.getByLabel('密码',{exact:true}).fill('');
+  await page.screenshot({path:'output/playwright/login-recovery-script-mobile.png',fullPage:true});
+  await page.unroute('**/auth-pages.js');
+  await page.getByRole('link',{name:'重新加载页面',exact:true}).click();
+  check(page.url()===base+'/login?next=%2Faccounts','Reload preserves intended destination');
+  check(await page.locator('#login-startup').isHidden()&&await page.locator('#login-submit').isEnabled(),'Successful script restores login');
+  const noScript=await page.context().browser().newContext({javaScriptEnabled:false,viewport:{width:360,height:800}});
+  try{
+    const offlinePage=await noScript.newPage();await offlinePage.goto(base+'/login');
+    check(await offlinePage.locator('#login-submit').isDisabled(),'JavaScript-disabled browser cannot submit credentials');
+    check(await offlinePage.getByText('浏览器未启用 JavaScript，请启用后重试。',{exact:true}).isVisible(),'No-JavaScript explanation is visible');
+    await offlinePage.locator('.login-help summary').click();
+    check(await offlinePage.locator('.login-help p').isVisible(),'Help remains usable without JavaScript');
+  }finally{await noScript.close();}
+  const target='**/api/v1/auth/login';
+  async function mockLogin(status,body,headers={}){
+    await page.unroute(target);
+    await page.goto(base+'/login');
+    await page.route(target,route=>route.fulfill({status,contentType:'text/html',headers,body}));
+    await page.getByLabel('登录账号',{exact:true}).fill('synthetic-only');
+    await page.getByLabel('密码',{exact:true}).fill('Synthetic-Preview-Only');
+    await page.getByRole('button',{name:'登录工作台',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelector('#login-form').getAttribute('aria-busy')==='false');
+  }
+  await mockLogin(401,'<h1>Unauthorized</h1>');
+  check((await page.locator('#form-feedback').textContent()).includes('账号或密码错误'),'HTML 401 gets meaningful credential error');
+  check(await page.locator('#password').inputValue()==='','HTML 401 clears password');
+  check(await page.locator('#password').evaluate(el=>document.activeElement===el),'HTML 401 focuses password');
+  await page.locator('#password').fill('Synthetic-Preview-Only');
+  check(await page.locator('[aria-invalid="true"]').count()===0,'Editing credentials clears stale paired invalid state');
+  await mockLogin(429,'<h1>Rate limit</h1>',{'Retry-After':'2'});
+  check(await page.locator('#login-submit').isDisabled(),'HTML 429 activates countdown');
+  check((await page.locator('#form-feedback').textContent()).includes('尝试次数过多'),'HTML 429 explains retry');
+  check(await page.locator('#password').inputValue()==='Synthetic-Preview-Only','Rate limiting preserves entered password');
+  await page.waitForFunction(()=>!document.querySelector('#login-submit').disabled);
+  check((await page.locator('#form-feedback').textContent()).includes('现在可以重新尝试'),'Countdown restores retry');
+  await mockLogin(429,'gateway limit',{'Retry-After':new Date(Date.now()+3000).toUTCString()});
+  check(await page.locator('#login-submit').isDisabled(),'HTTP-date Retry-After activates countdown');
+  await page.waitForFunction(()=>!document.querySelector('#login-submit').disabled,null,{timeout:6000});
+  check(await page.locator('#login-submit').isEnabled(),'HTTP-date delay expires at intended time');
+  await mockLogin(429,'gateway limit',{'Retry-After':'invalid-header'});
+  check(await page.locator('#login-submit').isDisabled(),'Malformed Retry-After uses safe fallback');
+  check((await page.locator('#submit-label').textContent()).match(/(?:59|60) 秒后可重试/),'Invalid delay falls back to 60 seconds');
+  await mockLogin(503,'<html>Gateway unavailable</html>');
+  check((await page.locator('#form-feedback').textContent()).includes('服务暂不可用'),'HTML 503 is readable');
+  check(await page.locator('#login-submit').isEnabled(),'Gateway failure allows manual retry');
+  check(await page.locator('#password').inputValue()==='Synthetic-Preview-Only','Gateway failure preserves input');
+  await mockLogin(200,'<html>Unexpected proxy page</html>');
+  check((await page.locator('#form-feedback').textContent()).includes('无法识别的响应'),'Invalid success response does not claim login success');
+  check(page.url()===base+'/login','Invalid response cannot redirect away');
+  await mockLogin(200,'{}');
+  check((await page.locator('#form-feedback').textContent()).includes('登录结果未确认'),'Missing success fields cannot masquerade as login');
+  await mockLogin(200,JSON.stringify({ok:true,redirect_to:'https://example.invalid'}));
+  check(page.url()===base+'/login','Unexpected redirect destination remains on login');
+  check(await page.locator('#password').inputValue()==='Synthetic-Preview-Only','Unconfirmed login preserves input for retry');
+  await page.unroute(target);
+  await page.goto(base+'/login');
+  check(errors.length===0,'No uncaught browser errors: '+errors.join('; '));
+  page.off('pageerror',onError);
+  return {status:'passed',assertions:results.length,checks:results};
+}

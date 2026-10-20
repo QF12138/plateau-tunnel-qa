@@ -1,0 +1,14 @@
+services:
+  tunnel-qa:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - tunnel-qa-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  tunnel-qa-data:
+

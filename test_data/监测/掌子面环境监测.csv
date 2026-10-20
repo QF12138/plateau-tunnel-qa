@@ -1,0 +1,6 @@
+sensor_id,timestamp,metric_code,value,unit,quality_flag,tunnel,mileage,section,source_system
+TEMP-TEST-01,2026-08-22T08:00:00+08:00,temperature,32.5,℃,normal,测试隧道,DK100+200,掌子面,synthetic-monitor
+TEMP-TEST-01,2026-08-22T09:00:00+08:00,temperature,39.2,℃,outlier,测试隧道,DK100+200,掌子面,synthetic-monitor
+DISP-TEST-01,2026-08-22T09:00:00+08:00,displacement,12.0,mm,normal,测试隧道,DK100+180,初期支护,synthetic-monitor
+CO-TEST-01,2026-08-22T09:00:00+08:00,co,,ppm,missing,测试隧道,DK100+200,掌子面,synthetic-monitor
+

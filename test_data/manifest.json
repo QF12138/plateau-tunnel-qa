@@ -1,0 +1,43 @@
+{
+  "description": "高原铁路隧道智能问答系统合成测试语料，不包含真实人员或工程敏感信息。",
+  "documents": [
+    {
+      "path": "标准/高地温施工安全测试规范.md",
+      "source_id": "TEST-STD-HEAT-001",
+      "title": "高地温隧道施工安全测试规范",
+      "source_type": "standard",
+      "project_site": "测试隧道",
+      "version": "V1.0",
+      "effective_date": "2026-01-01",
+      "security_level": "internal",
+      "owner_org": "合成测试单位",
+      "content_location": "第1至3章"
+    },
+    {
+      "path": "论文/高地应力与岩爆预警测试研究.txt",
+      "source_id": "TEST-RES-STRESS-001",
+      "title": "高地应力与岩爆预警测试研究",
+      "source_type": "research",
+      "project_site": "测试隧道",
+      "version": "V1.0",
+      "effective_date": "2026-02-01",
+      "security_level": "internal",
+      "owner_org": "合成测试单位",
+      "content_location": "全文"
+    },
+    {
+      "path": "案例/富水段超前注浆处置案例.json",
+      "source_id": "TEST-CASE-WATER-001",
+      "title": "富水段超前注浆处置测试案例",
+      "source_type": "engineering_case",
+      "project_site": "测试隧道进口工区",
+      "version": "V1.0",
+      "effective_date": "2026-03-01",
+      "security_level": "internal",
+      "owner_org": "合成测试单位",
+      "content_location": "案例记录"
+    }
+  ],
+  "monitoring_file": "监测/掌子面环境监测.csv"
+}
+

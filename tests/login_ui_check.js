@@ -1,0 +1,101 @@
+// Run through playwright-cli run-code against tests/auth_ui_preview.py on 8766.
+// All credentials are synthetic; this script must never target the real app.
+async page => {
+  const base = 'http://127.0.0.1:8766';
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  const checkText = async (selector, text) => {
+    await page.locator(selector).filter({hasText:text}).waitFor();
+  };
+  const loginPath = '**/api/v1/auth/login';
+  await page.context().clearCookies();
+  await page.goto(base+'/login?next=%2Faccounts');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  const username = page.getByLabel('登录账号', {exact:true});
+  const password = page.getByLabel('密码', {exact:true});
+  const submit = page.getByRole('button', {name:'登录工作台',exact:true});
+  const remember = page.getByLabel('记住账号',{exact:true});
+  await submit.click();
+  assert(await username.evaluate(el=>!el.validity.valid),'Empty username must be required');
+  await username.fill('   '); await password.fill('Preview-Admin-2026');
+  await submit.click(); await checkText('#form-feedback','请输入登录账号');
+  await username.fill('preview-admin'); await password.fill('wrong-password');
+  await page.getByRole('button',{name:'显示密码',exact:true}).click();
+  assert(await password.getAttribute('type')==='text','Password reveal');
+  await page.getByRole('button',{name:'隐藏密码',exact:true}).click();
+  await submit.click(); await checkText('#form-feedback','账号或密码错误');
+  assert(await password.inputValue()==='','Invalid password must be cleared');
+  assert(await password.evaluate(el=>document.activeElement===el),'Error focus');
+  assert(await password.getAttribute('aria-invalid')==='true','Accessible credential error');
+  await password.fill('Preview-Admin-2026');
+  await page.route(loginPath, route=>route.abort('internetdisconnected'));
+  await submit.click(); await checkText('#form-feedback','连接失败或超时');
+  assert(await password.inputValue()==='Preview-Admin-2026','Transient failure must preserve input');
+  assert(await submit.isEnabled(),'Retry must be enabled');
+  await page.unroute(loginPath);
+  let release, count=0;
+  const gate=new Promise(resolve=>{release=resolve;});
+  await page.route(loginPath, async route=>{count++;await gate;await route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({message:'账号或密码错误，或账号尚未启用'})});});
+  await submit.click();
+  assert(await page.locator('#login-submit').isDisabled(),'Pending submission must disable action');
+  assert(await username.getAttribute('readonly')!==null,'Pending submission locks credentials');
+  await page.locator('#login-form').evaluate(el=>{el.requestSubmit();el.requestSubmit();});
+  release(); await checkText('#form-feedback','账号或密码错误');
+  assert(count===1,'Duplicate form submissions must issue exactly one request');
+  await page.unroute(loginPath);
+  await password.fill('Preview-Admin-2026');
+  await page.route(loginPath, route=>route.fulfill({status:429,headers:{'Retry-After':'2'},contentType:'application/json',body:JSON.stringify({message:'尝试次数过多，请 2 秒后重试',details:{retry_after_seconds:2}})}));
+  await submit.click(); await checkText('#form-feedback','尝试次数过多');
+  assert(await page.locator('#login-submit').isDisabled(),'Rate-limit countdown disables action');
+  await page.waitForFunction(()=>!document.querySelector('#login-submit').disabled);
+  await checkText('#form-feedback','现在可以重新尝试登录');
+  assert(await password.inputValue()==='Preview-Admin-2026','Throttle preserves input');
+  await page.unroute(loginPath);
+  await password.dispatchEvent('keydown',{key:'A',modifierCapsLock:true});
+  assert(await page.locator('#caps-lock').isVisible(),'Caps Lock warning');
+  await password.blur();
+  await remember.check();
+  await submit.click(); await page.waitForURL(base+'/accounts');
+  await page.getByRole('button',{name:'退出登录',exact:true}).waitFor({state:'visible'});
+  assert(await page.evaluate(()=>localStorage.getItem('tunnel.login.username'))==='preview-admin','Remember account only');
+  assert(await page.evaluate(()=>!JSON.stringify(localStorage).includes('Preview-Admin-2026')),'Never persist password');
+  const accountWidths=[];
+  for(const width of [360,768,1440]){
+    await page.setViewportSize({width,height:900});
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Account page overflow '+width);
+    accountWidths.push(width);
+  }
+  await page.goto(base+'/login?next=%2Faccounts');
+  assert(page.url()===base+'/accounts','Already authenticated login redirects to target');
+  await page.getByRole('button',{name:'退出登录',exact:true}).click();
+  await page.waitForURL('**/login?reason=logged_out');
+  await checkText('#session-feedback','你已安全退出');
+  assert(await username.inputValue()==='preview-admin' && await password.inputValue()==='','Remember username but no password');
+  await remember.uncheck(); await page.reload();
+  assert(await username.inputValue()==='','Unchecking removes saved account');
+  await page.goto(base+'/login?reason=expired');
+  await checkText('#session-feedback','登录已过期');
+  const widths=[];
+  for(const width of [360,768,1024,1440]){
+    await page.setViewportSize({width,height:900});
+    await page.locator('.login-help summary').click();
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Login page overflow '+width);
+    assert(await page.locator('#login-submit').isVisible(),'Login action reachable');
+    await page.locator('.login-help summary').click();
+    widths.push(width);
+  }
+  await page.goto(base+'/login');
+  await page.keyboard.press('Tab');
+  assert(await page.evaluate(()=>document.activeElement.classList.contains('skip-login')),'Keyboard skip link');
+  await page.keyboard.press('Enter');
+  assert(await username.evaluate(el=>document.activeElement===el),'Skip link focuses account');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.locator('#login-form').evaluate(el=>el.setAttribute('aria-busy','true'));
+  assert(await page.locator('.submit-icon').evaluate(el=>getComputedStyle(el).animationName)==='none','Reduced motion');
+  await page.locator('#login-form').evaluate(el=>el.setAttribute('aria-busy','false'));
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.screenshot({path:'output/playwright/login-verified-desktop.png'});
+  await page.setViewportSize({width:360,height:800});
+  await page.screenshot({path:'output/playwright/login-verified-mobile.png'});
+  return {status:'passed',loginWidths:widths,accountWidths,checks:['empty input','wrong credentials','password reveal','network recovery','duplicate prevention','429 countdown','Caps Lock','safe return to accounts','session logout','remember username only','expiry explanation','keyboard focus','reduced motion']};
+}
